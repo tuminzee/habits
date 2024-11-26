@@ -1,0 +1,96 @@
+version: '3'
+
+vars:
+  BINARY_NAME: main
+  GO_VERSION: 'go1.22'
+  MAIN_FILE: cmd/main.go
+
+tasks:
+  hello:
+    desc: Print Go Version
+    cmds:
+      - echo {{.GO_VERSION}}
+  setup:
+    cmds:
+      - echo {{.GO_VERSION}}
+      - gvm install {{.GO_VERSION}}
+
+  start:
+    cmd: go run cmd/main.go
+
+  dev:
+    cmd: air
+
+  tidy:
+    cmd: go mod tidy
+  fmt:
+    cmd: go fmt ./...
+
+  tag:
+    cmds:
+      - git tag v0.0.1
+      - git push origin --tag
+
+  test:
+    cmd: go test -tags="exclude" -v ./...
+
+
+  cover:
+    cmd: go test -tags="exclude" -coverprofile=coverage.out ./...
+
+  
+  report:
+    deps: [cover]
+    cmd: go tool cover -html=coverage.out -o coverage.html
+
+  coverage:
+    deps: [cover]
+    # This command analyzes test coverage and checks if it meets 80% threshold
+    # Using explicit path to awk to avoid path issues
+    cmd: go tool cover -func coverage.out | grep "total:" | /usr/bin/awk '{print ((int($3) > 80) != 1) }'
+
+  build:
+    desc: Build the binary
+    cmds:
+      - mkdir -p bin
+      - go build -o bin/{{.BINARY_NAME}} {{.MAIN_FILE}}
+
+  package:
+    desc: Package binaries for release
+    cmds:
+      - rm -rf dist
+      - mkdir -p dist
+      - GOOS=linux GOARCH=amd64 go build -o dist/{{.BINARY_NAME}}-linux-amd64 {{.MAIN_FILE}}
+      - GOOS=darwin GOARCH=amd64 go build -o dist/{{.BINARY_NAME}}-darwin-amd64 {{.MAIN_FILE}}
+      - GOOS=windows GOARCH=amd64 go build -o dist/{{.BINARY_NAME}}-windows-amd64.exe {{.MAIN_FILE}}
+      - cd dist && tar czf {{.BINARY_NAME}}-linux-amd64.tar.gz {{.BINARY_NAME}}-linux-amd64
+      - cd dist && tar czf {{.BINARY_NAME}}-darwin-amd64.tar.gz {{.BINARY_NAME}}-darwin-amd64
+      - cd dist && zip {{.BINARY_NAME}}-windows-amd64.zip {{.BINARY_NAME}}-windows-amd64.exe
+      - GOOS=js GOARCH=wasm go build -o dist/{{.BINARY_NAME}}.wasm {{.MAIN_FILE}}
+      - cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" dist/
+
+  curl:
+    cmd: curl http://localhost:8080/hello
+
+  build-wasm:
+    cmds:
+      - GOOS=js GOARCH=wasm go build -o wasm/{{.BINARY_NAME}}.wasm {{.MAIN_FILE}} 
+      - cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" wasm/
+
+  start:wasm:
+    desc: Serve WASM files locally for testing
+    deps: [build-wasm]
+    cmds:
+      - go run -v server/wasm-server.go
+
+  start:prod:
+    cmds:
+      - task build
+      - ./bin/main
+
+  report-cleanup:
+    cmd: rm -rf coverage.html coverage.out
+
+  vet:
+    cmd: go vet ./...
+
