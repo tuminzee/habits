@@ -1,18 +1,36 @@
 import { useAtom } from "jotai";
 import { streakAtom, lastStreakUpdateAtom } from "@/state";
-import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ChartConfig, ChartContainer } from "@/components/ui/chart";
+import { TrendingUp } from "lucide-react";
+import {
+  RadialBarChart,
+  PolarGrid,
+  RadialBar,
+  PolarRadiusAxis,
+  Label,
+} from "recharts";
 
 export default function Streak() {
   const [streak, setStreak] = useAtom(streakAtom);
   const [lastUpdate, setLastUpdate] = useAtom(lastStreakUpdateAtom);
-  const [weeklyHistory, setWeeklyHistory] = useState<boolean[]>(Array(7).fill(false));
+  const [weeklyHistory, setWeeklyHistory] = useState<boolean[]>(
+    Array(7).fill(false)
+  );
 
   useEffect(() => {
     const today = new Date();
     const newHistory = Array(7).fill(false);
-    
+
     for (let i = 0; i < Math.min(streak, 7); i++) {
       const date = new Date(today);
       date.setDate(today.getDate() - i);
@@ -42,31 +60,128 @@ export default function Streak() {
     }
   };
 
+  const chartData = [
+    {
+      name: "streak",
+      value: (streak / 365) * 100,
+      fill: "var(--color-safari)",
+    },
+  ];
+  const chartConfig = {
+    value: {
+      label: "Days",
+    },
+    streak: {
+      label: "Streak",
+      color: "hsl(var(--chart-2))",
+    },
+  } satisfies ChartConfig;
+
   return (
-    <div className="bg-gray-100 flex items-center justify-center p-4">
+    <div className="flex items-center justify-center p-4">
       <div className="flex flex-col items-center gap-8 md:gap-12 py-4 md:py-8">
-        <div className="flex flex-col items-center gap-4">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Daily Streak</h1>
-          <Button 
-            variant="default" 
+        {/* <div className="flex flex-col items-center gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+            Daily Streak
+          </h1>
+          <Button
+            variant="default"
             onClick={handleStreakIncrement}
             className="p-6 md:p-8 hover:scale-105 transition-transform"
           >
             <p className="text-3xl md:text-4xl font-bold">{streak}</p>
           </Button>
-        </div>
+        </div> */}
+
+        <Card className="flex flex-col" onClick={handleStreakIncrement}>
+          <CardHeader className="items-center pb-0">
+            <CardTitle>Daily Streak</CardTitle>
+            <CardDescription>Keep up the streak!</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 pb-0">
+            <ChartContainer
+              config={chartConfig}
+              className="mx-auto aspect-square max-h-[250px]"
+            >
+              <RadialBarChart
+                data={chartData}
+                startAngle={0}
+                endAngle={(streak / 365) * 360}
+                innerRadius={80}
+                outerRadius={110}
+              >
+                <PolarGrid
+                  gridType="circle"
+                  radialLines={false}
+                  stroke="none"
+                  className="first:fill-muted last:fill-background"
+                  polarRadius={[86, 74]}
+                />
+                <RadialBar
+                  dataKey="value"
+                  background
+                  cornerRadius={10}
+                />
+                <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
+                  <Label
+                    content={({ viewBox }) => {
+                      if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                        return (
+                          <text
+                            x={viewBox.cx}
+                            y={viewBox.cy}
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                          >
+                            <tspan
+                              x={viewBox.cx}
+                              y={viewBox.cy}
+                              className="fill-foreground text-4xl font-bold"
+                            >
+                              {streak}
+                            </tspan>
+                            <tspan
+                              x={viewBox.cx}
+                              y={(viewBox.cy || 0) + 24}
+                              className="fill-muted-foreground"
+                            >
+                              Days
+                            </tspan>
+                          </text>
+                        );
+                      }
+                    }}
+                  />
+                </PolarRadiusAxis>
+              </RadialBarChart>
+            </ChartContainer>
+          </CardContent>
+          <CardFooter className="flex-col gap-2 text-sm">
+            <div className="flex items-center gap-2 font-medium leading-none">
+              Trending up by {((streak / 365) * 100).toFixed(2)}% this month{" "}
+              <TrendingUp className="h-4 w-4" />
+            </div>
+            <div className="leading-none text-muted-foreground">
+              Showing streak for the last 365 days
+            </div>
+          </CardFooter>
+        </Card>
 
         <div className="flex flex-col items-center gap-3 md:gap-4">
-          <p className="text-lg md:text-xl font-semibold text-gray-700">Last 7 Days</p>
+          <p className="text-lg md:text-xl font-semibold text-gray-700">
+            Last 7 Days
+          </p>
           <div className="flex gap-2 md:gap-3">
             {weeklyHistory.map((completed, index) => (
               <div
                 key={index}
                 className={`w-8 h-8 md:w-12 md:h-12 rounded-lg flex items-center justify-center shadow-sm transition-colors ${
-                  completed ? 'bg-green-500 text-white' : 'bg-white text-gray-400'
+                  completed
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-primary/10 text-primary/50"
                 }`}
               >
-                {completed ? '✓' : ''}
+                {completed ? "✓" : ""}
               </div>
             ))}
           </div>
