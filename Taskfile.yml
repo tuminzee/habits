@@ -83,6 +83,17 @@ tasks:
     cmds:
       - go run -v server/wasm-server.go
 
+  build-img:
+    cmd: docker build -t habits-tuminzee .
+
+  run-img-dev:
+    # deps: [build-image]
+    cmd: docker compose -f docker-compose-dev.yml up
+
+  run-img-prod:
+    # deps: [build-image]
+    cmd: docker compose -f docker-compose-prod.yml up
+
   start:prod:
     cmds:
       - task build

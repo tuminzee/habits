@@ -43,3 +43,4 @@ yarn.lock
 *.swp
 *.swo
 .DS_Store
+.env.prod
