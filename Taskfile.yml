@@ -16,7 +16,7 @@ tasks:
       - gvm install {{.GO_VERSION}}
 
   start:
-    cmd: go run cmd/main.go
+    cmd: GO_ENV=development go run cmd/main.go
 
   dev:
     cmd: air
@@ -87,21 +87,22 @@ tasks:
     cmd: docker build -t habits-tuminzee .
 
   run-img-dev:
-    # deps: [build-image]
-    cmd: docker compose -f docker-compose-dev.yml up
+    cmd: docker compose -f docker-compose-dev.yml up --build
 
   run-img-prod:
-    # deps: [build-image]
-    cmd: docker compose -f docker-compose-prod.yml up
+    cmd: docker compose -f docker-compose-prod.yml up --build
 
   start:prod:
+    deps: [build]
     cmds:
-      - task build
-      - ./bin/main
+      - GO_ENV=production ./bin/main
 
   report-cleanup:
     cmd: rm -rf coverage.html coverage.out
 
   vet:
     cmd: go vet ./...
+
+  deploy:
+    cmd: fly deploy
 

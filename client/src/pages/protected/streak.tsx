@@ -19,6 +19,7 @@ import {
   PolarRadiusAxis,
   Label,
 } from "recharts";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Streak() {
   const [streak, setStreak] = useAtom(streakAtom);
@@ -173,16 +174,16 @@ export default function Streak() {
           </p>
           <div className="flex gap-2 md:gap-3">
             {weeklyHistory.map((completed, index) => (
-              <div
+              <Checkbox
                 key={index}
-                className={`w-8 h-8 md:w-12 md:h-12 rounded-lg flex items-center justify-center shadow-sm transition-colors ${
-                  completed
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-primary/10 text-primary/50"
-                }`}
-              >
-                {completed ? "✓" : ""}
-              </div>
+                className="h-8 w-8 md:h-12 md:w-12 rounded-lg"
+                checked={completed}
+                onCheckedChange={(checked) => {
+                  const newHistory = [...weeklyHistory];
+                  newHistory[index] = checked === true;
+                  setWeeklyHistory(newHistory);
+                }}
+              />
             ))}
           </div>
           <div className="flex gap-2 md:gap-3 text-xs md:text-sm text-gray-500">
